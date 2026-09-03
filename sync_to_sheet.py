@@ -18,31 +18,33 @@ if not os.path.exists(cred_path) and os.path.exists(
 ):
   cred_path = "/etc/secrets/credentials.json"
 
-# 2. قراءة الملف ومعالجة المفتاح بـ Regex لحل أي أخطاء في الـ Newlines
-with open(cred_path, "r", encoding="utf-8") as f:
-  creds_dict = json.load(f)
 
-if "private_key" in creds_dict:
-  # استبدال أي شكل من أشكال الـ \n بسطر جديد حقيقي
-  creds_dict["private_key"] = re.sub(
-      r"\\+n", "\n", creds_dict["private_key"]
-  )
+def get_gspread_client():
+  # قراءة الملف ومعالجة المفتاح بـ Regex لحل أي أخطاء في الـ Newlines
+  with open(cred_path, "r", encoding="utf-8") as f:
+    creds_dict = json.load(f)
 
-# 3. إعداد الاتصال باستخدام المكتبة الحديثة
-creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-client = gspread.authorize(creds)
+  if "private_key" in creds_dict:
+    creds_dict["private_key"] = re.sub(
+        r"\\+n", "\n", creds_dict["private_key"]
+    )
 
-# 4. فتح الشيت المطلوب
-sheet = client.open("SmartCollection_Cache").sheet1
+  creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+  return gspread.authorize(creds)
 
 
 def fetch_and_update():
   print("🔄 جاري سحب وتحديث البيانات من Smart Collection...")
+
+  # فتح الشيت جوه الدالة لحماية السكريبت من السقوط أثناء مشاكل الشبكة
+  client = get_gspread_client()
+  sheet = client.open("SmartCollection_Cache").sheet1
+
   with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     page = browser.new_page()
 
-    # --- حط كود سحب البيانات وتحديث الشيت هنا ---
+    # --- حط كود سحب البيانات المعتاد هنا ---
     rows = [
         ["Tower Name", "Status", "Updated At"],
         ["Tower A", "Active", time.strftime("%Y-%m-%d %H:%M:%S")],
@@ -55,7 +57,7 @@ def fetch_and_update():
     browser.close()
 
 
-# 5. حلقة التكرار المستمرة 24/7
+# 2. حلقة التكرار المستمرة 24/7
 while True:
   try:
     fetch_and_update()
