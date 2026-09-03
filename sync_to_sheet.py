@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import time
@@ -11,16 +12,11 @@ scope = [
     "https://www.googleapis.com/auth/drive",
 ]
 
-# قراءة الاعتمادات من بيئة Render أو من الملف المحلي
+# قراءة الاعتمادات وفك تشفير Base64 من بيئة Render أو من الملف المحلي
 if "GOOGLE_CREDENTIALS" in os.environ:
-    creds_json = json.loads(os.environ["GOOGLE_CREDENTIALS"])
-
-    # تصليح الـ private_key لو تم تشويه الـ newlines بواسطة Render
-    if "private_key" in creds_json:
-        creds_json["private_key"] = creds_json["private_key"].replace(
-            "\\n", "\n"
-        )
-
+    raw_b64 = os.environ["GOOGLE_CREDENTIALS"]
+    decoded_json = base64.b64decode(raw_b64).decode("utf-8")
+    creds_json = json.loads(decoded_json)
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
 else:
     creds = ServiceAccountCredentials.from_json_keyfile_name(
