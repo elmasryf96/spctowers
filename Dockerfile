@@ -7,4 +7,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["python", "sync_to_sheet.py"]
+# تشغيل سيرفر بسيط في الخلفية للرد على Render + تشغيل السكريبت
+CMD python -m http.server $PORT & python sync_to_sheet.py
