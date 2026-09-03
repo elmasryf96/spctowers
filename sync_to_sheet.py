@@ -11,8 +11,16 @@ scope = [
     "https://www.googleapis.com/auth/drive",
 ]
 
+# قراءة الاعتمادات من بيئة Render أو من الملف المحلي
 if "GOOGLE_CREDENTIALS" in os.environ:
     creds_json = json.loads(os.environ["GOOGLE_CREDENTIALS"])
+
+    # تصليح الـ private_key لو تم تشويه الـ newlines بواسطة Render
+    if "private_key" in creds_json:
+        creds_json["private_key"] = creds_json["private_key"].replace(
+            "\\n", "\n"
+        )
+
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
 else:
     creds = ServiceAccountCredentials.from_json_keyfile_name(
@@ -28,18 +36,17 @@ sheet = client.open("SmartCollection_Cache").sheet1
 def fetch_and_update():
     print("🔄 جاري سحب وتحديث البيانات من Smart Collection...")
     with sync_playwright() as p:
-        # تشغيل المتصفح في الوضع الخفي (Headless)
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
 
-        # --- أضف خطوات تسجيل الدخول وسحب البيانات الخاصة بك هنا ---
-        # مثال لتأكيد عمل السكريبت وتحديث الشيت
+        # --- حط كود تسجيل الدخول وسحب البيانات المعتاد هنا ---
+
+        # مثال لتحديث البيانات في الشيت:
         rows = [
             ["Tower Name", "Status", "Updated At"],
             ["Tower A", "Active", time.strftime("%Y-%m-%d %H:%M:%S")],
         ]
 
-        # تحديث البيانات في الشيت
         sheet.clear()
         sheet.update(range_name="A1", values=rows)
         print("✅ تم تحديث Google Sheet بنجاح بالأبراج والعقود!")
